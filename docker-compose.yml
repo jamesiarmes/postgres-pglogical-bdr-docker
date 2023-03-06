@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  primary:
+    build: .
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+    volumes:
+      - postgres-primary:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf
+    networks:
+      - postgres-bdr
+    command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+  secondary:
+    build: .
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+    volumes:
+      - postgres-secondary:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf
+    networks:
+      - postgres-bdr
+    command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_CONFIG_DEFAULT_SERVER: '"0.0.0.0"'
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_EMAIL:-pgadmin@example.com}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD:-pgadmin}"
+      PGADMIN_DISABLE_POSTFIX: true
+    volumes:
+      - ./servers.json:/pgadmin4/servers.json
+    networks:
+      - postgres-bdr
+    ports:
+      - "8080:80"
+
+networks:
+  postgres-bdr:
+
+volumes:
+  postgres-primary:
+  postgres-secondary:
